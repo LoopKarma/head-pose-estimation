@@ -40,6 +40,8 @@ class PoseEstimator:
         # self.r_vec = None
         # self.t_vec = None
 
+        self._3d_box = self.draw_3d_box_as_annotation_of_pose()
+
     def _get_full_model_points(self, filename='assets/model.txt'):
         """Get all 68 3D model points from file"""
         raw_value = []
@@ -95,6 +97,34 @@ class PoseEstimator:
         return (rotation_vector, translation_vector)
 
     def draw_annotation_box(self, image, rotation_vector, translation_vector, color=(255, 255, 255), line_width=2):
+        point_2d = self.draw_2d_poins_based_on_3d_box_of_pose(rotation_vector, translation_vector)
+
+        # Draw all the lines
+        cv2.polylines(image, [point_2d], True, color, line_width, cv2.LINE_AA)
+        # print(point_2d[1])
+        # print('first point', tuple(point_2d[1]))
+        # print('second point', tuple(point_2d[6]))
+        cv2.line(image, tuple(point_2d[1]), tuple(
+            point_2d[6]), color, line_width, cv2.LINE_AA)
+        cv2.line(image, tuple(point_2d[2]), tuple(
+            point_2d[7]), color, line_width, cv2.LINE_AA)
+        cv2.line(image, tuple(point_2d[3]), tuple(
+            point_2d[8]), color, line_width, cv2.LINE_AA)
+
+    def draw_2d_poins_based_on_3d_box_of_pose(self, rotation_vector, translation_vector):
+        point_3d = self._3d_box
+
+        # Map to 2d image points
+        (point_2d, _) = cv2.projectPoints(point_3d,
+                                          rotation_vector,
+                                          translation_vector,
+                                          self.camera_matrix,
+                                          self.dist_coeefs)
+
+        point_2d = np.int32(point_2d.reshape(-1, 2))
+        return point_2d
+
+    def draw_3d_box_as_annotation_of_pose(self):
         """Draw a 3D box as annotation of pose"""
         point_3d = []
         rear_size = 75
@@ -104,7 +134,6 @@ class PoseEstimator:
         point_3d.append((rear_size, rear_size, rear_depth))
         point_3d.append((rear_size, -rear_size, rear_depth))
         point_3d.append((-rear_size, -rear_size, rear_depth))
-
         front_size = 100
         front_depth = 100
         point_3d.append((-front_size, -front_size, front_depth))
@@ -113,23 +142,26 @@ class PoseEstimator:
         point_3d.append((front_size, -front_size, front_depth))
         point_3d.append((-front_size, -front_size, front_depth))
         point_3d = np.array(point_3d, dtype=np.float).reshape(-1, 3)
+        return point_3d
 
-        # Map to 2d image points
-        (point_2d, _) = cv2.projectPoints(point_3d,
-                                          rotation_vector,
-                                          translation_vector,
-                                          self.camera_matrix,
-                                          self.dist_coeefs)
-        point_2d = np.int32(point_2d.reshape(-1, 2))
+    def draw_limit_lines(self, image, color=(255, 0, 0), line_width=2):
+        height, width = image.shape[:2]
+        # print(self.draw_3d_box_as_annotation_of_pose())
 
-        # Draw all the lines
-        cv2.polylines(image, [point_2d], True, color, line_width, cv2.LINE_AA)
-        cv2.line(image, tuple(point_2d[1]), tuple(
-            point_2d[6]), color, line_width, cv2.LINE_AA)
-        cv2.line(image, tuple(point_2d[2]), tuple(
-            point_2d[7]), color, line_width, cv2.LINE_AA)
-        cv2.line(image, tuple(point_2d[3]), tuple(
-            point_2d[8]), color, line_width, cv2.LINE_AA)
+        # left limit
+        cv2.line(image, (2, 0), (2, height), color, line_width, cv2.LINE_AA)
+
+        # right limit
+        cv2.line(image, (1278, 0), (1278, height), color, line_width, cv2.LINE_AA)
+
+        # top limit
+        cv2.line(image, (0, 100), (width, 100), color, line_width, cv2.LINE_AA)
+
+        # bottom limit
+        cv2.line(image, (0, 600), (width, 600), color, line_width, cv2.LINE_AA)
+
+        # print(height, width)
+
 
     def get_pose_marks(self, marks):
         """Get marks ready for pose estimation from 68 marks"""

@@ -20,6 +20,10 @@ detect_os()
 
 CNN_INPUT_SIZE = 128
 
+UP_THRESHOLD = 20
+DOWN_THRESHOLD = -20
+RIGHT_THRESHOLD = -20
+LEFT_THRESHOLD = 50
 
 def get_face(detector, img_queue, box_queue):
     """Get face from image queue. This function is used for multiprocessing"""
@@ -33,7 +37,7 @@ def main():
     """MAIN"""
     # Video source from webcam or video file.
     video_src = 0
-    cam = cv2.VideoCapture(video_src)
+    cam = cv2.VideoCapture("test.mp4")
     _, sample_frame = cam.read()
 
     # Introduce mark_detector to detect landmarks.
@@ -50,6 +54,7 @@ def main():
     # Introduce pose estimator to solve pose. Get one frame to setup the
     # estimator according to the image size.
     height, width = sample_frame.shape[:2]
+    print('img frame size is', height, 'x', width)
     pose_estimator = PoseEstimator(img_size=(height, width))
 
     # Introduce scalar stabilizers for pose.
@@ -59,6 +64,7 @@ def main():
         cov_process=0.1,
         cov_measure=0.1) for _ in range(6)]
 
+    counter = 0;
     while True:
         # Read frame, crop it, flip it, suits your needs.
         frame_got, frame = cam.read()
@@ -97,8 +103,8 @@ def main():
             marks[:, 1] += facebox[1]
 
             # Uncomment following line to show raw marks.
-            # mark_detector.draw_marks(
-            #     frame, marks, color=(0, 255, 0))
+            mark_detector.draw_marks(
+                frame, marks, color=(0, 255, 0))
 
             # Try pose estimation with 68 points.
             pose = pose_estimator.solve_pose_by_68_points(marks)
@@ -115,9 +121,35 @@ def main():
             # pose_estimator.draw_annotation_box(
             #     frame, pose[0], pose[1], color=(255, 128, 128))
 
+
+            rotationVector = stabile_pose[0]
+            translationVector = stabile_pose[1]
+
+            if (counter % 10 == 0) and (translationVector[2] < -500):
+                print('translation vector is ', translationVector)
+                # print(translationVector[0])
+
+                if translationVector[1] > UP_THRESHOLD:
+                    print('looking UP')
+                    # TODO put value as a text on a image
+
+                elif translationVector[1] < DOWN_THRESHOLD:
+                    print('looking DOWN')
+
+                elif translationVector[0] < RIGHT_THRESHOLD:
+                    print('looking RIGHT')
+
+                elif translationVector[0] > LEFT_THRESHOLD:
+                    print('looking LEFT')
+
+
             # Uncomment following line to draw stabile pose annotaion on frame.
             pose_estimator.draw_annotation_box(
-                frame, stabile_pose[0], stabile_pose[1], color=(128, 255, 128))
+                frame, rotationVector, translationVector, color=(128, 255, 128))
+
+        counter = counter + 1
+
+        pose_estimator.draw_limit_lines(frame)
 
         # Show preview.
         cv2.imshow("Preview", frame)

@@ -13,5 +13,5 @@ def detect_os(bypass=False):
         print("It seems that you are running this code from {}, on which the Python multiprocessing may not work properly. Consider running this code on Linux.".format(os_name))
         print("Exiting..")
         exit()
-    else:
-        print("Linux is fine! Python multiprocessing works.")
+    # else:
+        # print("Linux is fine! Python multiprocessing works.")

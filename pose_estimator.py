@@ -179,45 +179,62 @@ class PoseEstimator:
         return line_map
 
     def draw_limit_line_top(self, image, top, color=LIMIT_LINES_COLOR, line_width=LIMIT_LINES_WIDTH):
-        limit_points = self.create_limit_points_top(abs(top * self.POINT_COEFFICIENT))
-        translation = (0, top, self.AXIS_Z)
-        points_2d = self.transform_limit_points_to_image_coords(limit_points, translation)
-        points_2d[0][0] = 0
-        points_2d[1][0] = self.img_width
+        # limit_points = self.create_limit_points_top(abs(top * self.POINT_COEFFICIENT))
+        # translation = (0, top, self.AXIS_Z)
+        # points_2d = self.transform_limit_points_to_image_coords(limit_points, translation)
+        points_2d = [
+            [0, 200],
+            [self.img_width, 200]
+        ]
+        points_2d = np.array(points_2d, dtype=np.int32).reshape(2, 2)
 
         cv2.polylines(image, [points_2d], True, color, line_width, cv2.LINE_AA)
 
     def draw_limit_line_bottom(self, image, bottom, color=LIMIT_LINES_COLOR, line_width=LIMIT_LINES_WIDTH):
-        translation = (0, bottom, self.AXIS_Z)
-        limit_points = self.create_limit_points_bottom(abs(bottom * self.POINT_COEFFICIENT))
-
-        points_2d = self.transform_limit_points_to_image_coords(limit_points, translation)
-        points_2d[0][0] = 0
-        points_2d[1][0] = self.img_width
+        # translation = (0, bottom, self.AXIS_Z)
+        # limit_points = self.create_limit_points_bottom(abs(bottom * self.POINT_COEFFICIENT))
+        #
+        # points_2d = self.transform_limit_points_to_image_coords(limit_points, translation)
+        # points_2d[0][0] = 0
+        # points_2d[1][0] = self.img_width
         # pprint(points_2d)
-
+        points_2d = [
+            [0, 600],
+            [self.img_width, 600]
+        ]
+        points_2d = np.array(points_2d, dtype=np.int32).reshape(2, 2)
         cv2.polylines(image, [points_2d], True, color, line_width, cv2.LINE_AA)
 
     def draw_limit_line_right(self, image, right, color=LIMIT_LINES_COLOR, line_width=LIMIT_LINES_WIDTH):
-        translation = (right, 0, self.AXIS_Z)
-        limit_points = self.create_limit_points_right(abs(right * self.POINT_COEFFICIENT))
-
-        points_2d = self.transform_limit_points_to_image_coords(limit_points, translation)
+        # translation = (right, 0, self.AXIS_Z)
+        # limit_points = self.create_limit_points_right(abs(right * self.POINT_COEFFICIENT))
+        #
+        # points_2d = self.transform_limit_points_to_image_coords(limit_points, translation)
         # points_2d[0][1] = 0
         # points_2d[1][1] = self.img_height
         # pprint(points_2d)
+        points_2d = [
+            [800, 0],
+            [800, self.img_height]
+        ]
+        points_2d = np.array(points_2d, dtype=np.int32).reshape(2, 2)
 
         cv2.polylines(image, [points_2d], True, color, line_width, cv2.LINE_AA)
 
     def draw_limit_line_left(self, image, left, color=LIMIT_LINES_COLOR, line_width=LIMIT_LINES_WIDTH):
-        translation = (left, 0, self.AXIS_Z)
-        limit_points = self.create_limit_points_left(abs(left * self.POINT_COEFFICIENT))
+        # translation = (left, 0, self.AXIS_Z)
+        # limit_points = self.create_limit_points_left(abs(left * self.POINT_COEFFICIENT))
+        #
+        # points_2d = self.transform_limit_points_to_image_coords(limit_points, translation)
+        # points_2d[0][1] = 0
+        # points_2d[1][1] = self.img_height
+        # # pprint(points_2d)
 
-        points_2d = self.transform_limit_points_to_image_coords(limit_points, translation)
-        points_2d[0][1] = 0
-        points_2d[1][1] = self.img_height
-        # pprint(points_2d)
-
+        points_2d = [
+            [400, 0],
+            [400, self.img_height]
+        ]
+        points_2d = np.array(points_2d, dtype=np.int32).reshape(2, 2)
         cv2.polylines(image, [points_2d], True, color, line_width, cv2.LINE_AA)
 
 

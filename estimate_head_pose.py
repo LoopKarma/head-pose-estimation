@@ -8,7 +8,7 @@ by solving a PnP problem.
 from multiprocessing import Process, Queue
 
 import numpy as np
-
+from pprint import pprint
 import cv2
 from mark_detector import MarkDetector
 from os_detector import detect_os
@@ -16,12 +16,15 @@ from pose_estimator import PoseEstimator
 from stabilizer import Stabilizer
 
 # multiprocessing may not work on Windows and macOS, check OS for safety.
+
 detect_os()
+# distance to face on Z axis
+AXIS_Z = -500
 
 CNN_INPUT_SIZE = 128
 
-UP_THRESHOLD = 20
-DOWN_THRESHOLD = -20
+TOP_THRESHOLD = 20
+BOTTOM_THRESHOLD = -20
 RIGHT_THRESHOLD = -20
 LEFT_THRESHOLD = 50
 
@@ -35,9 +38,18 @@ def get_face(detector, img_queue, box_queue):
 
 def main():
     """MAIN"""
+    font = cv2.FONT_HERSHEY_SIMPLEX
+
+    axis_z_array = []
+    top_threshold = TOP_THRESHOLD
+    bottom_threshold = BOTTOM_THRESHOLD
+    right_threshold = RIGHT_THRESHOLD
+    left_threshold = LEFT_THRESHOLD
+
+    translation_vector = None
     # Video source from webcam or video file.
     video_src = 0
-    cam = cv2.VideoCapture("test.mp4")
+    cam = cv2.VideoCapture("test2.mp4")
     _, sample_frame = cam.read()
 
     # Introduce mark_detector to detect landmarks.
@@ -122,39 +134,73 @@ def main():
             #     frame, pose[0], pose[1], color=(255, 128, 128))
 
 
-            rotationVector = stabile_pose[0]
-            translationVector = stabile_pose[1]
+            rotation_vector = stabile_pose[0]
+            translation_vector = stabile_pose[1]
 
-            if (counter % 10 == 0) and (translationVector[2] < -500):
-                print('translation vector is ', translationVector)
-                # print(translationVector[0])
+            if len(axis_z_array) > 0:
+                axis_z = sum(axis_z_array) / float(len(axis_z_array))
+            else:
+                axis_z = AXIS_Z
 
-                if translationVector[1] > UP_THRESHOLD:
-                    print('looking UP')
-                    # TODO put value as a text on a image
+            # pprint(translationVector)
+            if translation_vector[2] < axis_z:
+                if top_threshold is not None and translation_vector[1] > top_threshold:
+                    print('top')
+                    cv2.putText(frame, 'UP', (500, 100), font, 4, (255, 255, 255), 2, cv2.LINE_AA)
 
-                elif translationVector[1] < DOWN_THRESHOLD:
-                    print('looking DOWN')
+                elif bottom_threshold is not None and translation_vector[1] < bottom_threshold:
+                    cv2.putText(frame, 'DOWN', (500, 600), font, 4, (255, 255, 255), 2, cv2.LINE_AA)
+                    print('down')
 
-                elif translationVector[0] < RIGHT_THRESHOLD:
-                    print('looking RIGHT')
+                elif right_threshold is not None and translation_vector[0] < right_threshold:
+                    cv2.putText(frame, 'RIGHT', (900, 400), font, 4, (255, 255, 255), 2, cv2.LINE_AA)
+                    print('right')
 
-                elif translationVector[0] > LEFT_THRESHOLD:
-                    print('looking LEFT')
+                elif left_threshold is not None and translation_vector[0] > left_threshold:
+                    cv2.putText(frame, 'LEFT', (100, 400), font, 4, (255, 255, 255), 2, cv2.LINE_AA)
+                    print('left')
 
 
             # Uncomment following line to draw stabile pose annotaion on frame.
             pose_estimator.draw_annotation_box(
-                frame, rotationVector, translationVector, color=(128, 255, 128))
+                frame, rotation_vector, translation_vector, color=(128, 255, 128))
 
         counter = counter + 1
 
-        pose_estimator.draw_limit_lines(frame)
+        # pose_estimator.draw_limit_line_top(frame, TOP_THRESHOLD)
+        # pose_estimator.draw_limit_line_bottom(frame, BOTTOM_THRESHOLD)
+        # pose_estimator.draw_limit_line_right(frame, RIGHT_THRESHOLD)
+        # pose_estimator.draw_limit_line_right(frame, RIGHT_THRESHOLD)
 
         # Show preview.
         cv2.imshow("Preview", frame)
-        if cv2.waitKey(10) == 27:
+
+        key = cv2.waitKey(10)
+        # exit on ESC key
+        if key == 27:
             break
+
+        if translation_vector is not None:
+             # W key to set top limit
+            if key == 119:
+                top_threshold = translation_vector[1]
+                axis_z_array.append(translation_vector[2])
+                print('top limit', top_threshold)
+             # A key to set left limit
+            if key == 97:
+                left_threshold = translation_vector[0]
+                axis_z_array.append(translation_vector[2])
+                print('left limit', left_threshold)
+             # S key to set bottom limit
+            if key == 115:
+                bottom_threshold = translation_vector[1]
+                axis_z_array.append(translation_vector[2])
+                print('bottom limit', bottom_threshold)
+             # D key to set right limit
+            if key == 100:
+                right_threshold = translation_vector[0]
+                axis_z_array.append(translation_vector[2])
+                print('right limit', right_threshold)
 
     # Clean up the multiprocessing process.
     box_process.terminate()

@@ -8,6 +8,7 @@ by solving a PnP problem.
 from multiprocessing import Process, Queue
 
 import numpy as np
+import os as os
 from pprint import pprint
 import cv2
 from mark_detector import MarkDetector
@@ -49,7 +50,12 @@ def main():
     translation_vector = None
     # Video source from webcam or video file.
     video_src = 0
-    cam = cv2.VideoCapture("test_6.mp4")
+
+    cam = cv2.VideoCapture("test_0.mp4")
+    # cam = cv2.VideoCapture("test_3.mp4")
+    allow_cursor = True
+    # allow_cursor = False
+
     _, sample_frame = cam.read()
 
     # Introduce mark_detector to detect landmarks.
@@ -82,6 +88,8 @@ def main():
     window_name = "pose recognition"
     # cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
     # cv2.resizeWindow(window_name, 1680, 1680)
+    last_direction = None
+    direction = None
 
     while True:
         # Read frame, crop it, flip it, suits your needs.
@@ -93,8 +101,8 @@ def main():
         # frame = frame[0:480, 300:940]
 
         # If frame comes from webcam, flip it so it looks like a mirror.
-        if video_src == 0:
-            frame = cv2.flip(frame, 2)
+        # if video_src == 0:
+        #     frame = cv2.flip(frame, 2)
 
         # Pose estimation by 3 steps:
         # 1. detect face;
@@ -144,48 +152,54 @@ def main():
             translation_vector = stabile_pose[1]
 
             # pprint(axis_z_array)
-            if len(axis_z_array) > 0:
-                axis_z = sum(axis_z_array) / float(len(axis_z_array))
-            else:
-                axis_z = AXIS_Z
+            # if len(axis_z_array) > 0:
+            #     axis_z = sum(axis_z_array) / float(len(axis_z_array))
+            # else:
+            #     axis_z = AXIS_Z
             axis_z = AXIS_Z
 
-            # pprint(translation_vector)
+
             if translation_vector[2] < axis_z:
                 if top_threshold is not None and translation_vector[1] > top_threshold:
-                    print('top', flush=True)
+                    direction = "top"
                     cv2.putText(frame, 'UP', (500, 100), font, 4, (255, 255, 255), 2, cv2.LINE_AA)
 
                 elif bottom_threshold is not None and translation_vector[1] < bottom_threshold:
-                    cv2.putText(frame, 'DOWN', (500, 600), font, 4, (255, 255, 255), 2, cv2.LINE_AA)
-                    print('down', flush=True)
+                    direction = "down"
+                    cv2.putText(frame, 'DOWN', (600, 400), font, 4, (255, 255, 255), 2, cv2.LINE_AA)
 
                 elif right_threshold is not None and translation_vector[0] < right_threshold:
-                    cv2.putText(frame, 'RIGHT', (900, 400), font, 4, (255, 255, 255), 2, cv2.LINE_AA)
-                    print('right', flush=True)
+                    cv2.putText(frame, 'RIGHT', (600, 400), font, 4, (255, 255, 255), 2, cv2.LINE_AA)
+                    direction = "right"
 
                 elif left_threshold is not None and translation_vector[0] > left_threshold:
                     cv2.putText(frame, 'LEFT', (100, 400), font, 4, (255, 255, 255), 2, cv2.LINE_AA)
-                    print('left', flush=True)
+                    direction = "left"
 
+
+            if last_direction != direction:
+                print(direction, flush=True)
+                last_direction = direction
+                if allow_cursor:
+                    os.system("make cursor-" + direction)
 
             # Uncomment following line to draw stabile pose annotaion on frame.
             pose_estimator.draw_annotation_box(
                 frame, rotation_vector, translation_vector, color=(128, 255, 128))
 
+        # print('frame counter', counter)
         counter = counter + 1
-
-        if top_threshold:
-            pose_estimator.draw_limit_line_top(frame, top_threshold)
-
-        if bottom_threshold:
-            pose_estimator.draw_limit_line_bottom(frame, bottom_threshold)
-
-        if right_threshold:
-            pose_estimator.draw_limit_line_right(frame, right_threshold)
-
-        if left_threshold:
-            pose_estimator.draw_limit_line_left(frame, left_threshold)
+        # if top_threshold:
+        #     pose_estimator.draw_limit_line_top(frame, top_threshold)
+        #
+        # if bottom_threshold:
+        #     pose_estimator.draw_limit_line_bottom(frame, bottom_threshold)
+        #
+        # if right_threshold:
+        #     pose_estimator.draw_limit_line_right(frame, right_threshold)
+        #
+        # if left_threshold:
+        #     pose_estimator.draw_limit_line_left(frame, left_threshold)
 
         # Show preview.
         cv2.imshow(window_name, frame)
@@ -195,27 +209,34 @@ def main():
         if key == 27:
             break
 
+        # reset boundaries
+        if key == 32:
+            top_threshold = None
+            left_threshold = None
+            bottom_threshold = None
+            right_threshold = None
+
         if translation_vector is not None:
              # W key to set top limit
             if key == 119:
                 top_threshold = translation_vector[1]
                 axis_z_array.append(translation_vector[2])
-                # print('top limit', top_threshold)
+                print('top limit', top_threshold)
              # A key to set left limit
             if key == 97:
                 left_threshold = translation_vector[0]
                 axis_z_array.append(translation_vector[2])
-                # print('left limit', left_threshold)
+                print('left limit', left_threshold)
              # S key to set bottom limit
             if key == 115:
                 bottom_threshold = translation_vector[1]
                 axis_z_array.append(translation_vector[2])
-                # print('bottom limit', bottom_threshold)
+                print('bottom limit', bottom_threshold)
              # D key to set right limit
             if key == 100:
                 right_threshold = translation_vector[0]
                 axis_z_array.append(translation_vector[2])
-                # print('right limit', right_threshold)
+                print('right limit', right_threshold)
 
     # Clean up the multiprocessing process.
     box_process.terminate()

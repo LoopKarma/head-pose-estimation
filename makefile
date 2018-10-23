@@ -1,19 +1,19 @@
 # Cursor commands
 # cliclick -e 1000 -m verbose c:0,450
 cursor-center:
-	cliclick -e 1000 -m verbose c:$$(make center-x),$$(make center-y)
+	cliclick -e 500 -m verbose c:$$(make center-x),$$(make center-y)
 
 cursor-top:
-	cliclick -e 1000 -m verbose c:$$(make center-x),$$(make top-y)
+	cliclick -e 500 -m verbose c:$$(make center-x),$$(make top-y)
 
 cursor-down:
-	cliclick -e 1000 -m verbose c:$$(make center-x),$$(make down-y)
+	cliclick -e 500 -m verbose c:$$(make center-x),$$(make down-y)
 
 cursor-left:
-	cliclick -e 1000 -m verbose c:$$(make left-x),$$(make center-y)
+	cliclick -e 500 -m verbose c:$$(make left-x),$$(make center-y)
 
 cursor-right:
-	cliclick -e 1000 -m verbose c:$$(make right-x),$$(make center-y)
+	cliclick -e 500 -m verbose c:$$(make right-x),$$(make center-y)
 
 # Hardcoded values =/
 center-x:
@@ -23,16 +23,16 @@ center-y:
 	@echo 450
 
 top-y:
-	@echo 0
+	@echo 20
 
 down-y:
-	@echo "$$(($$(make max-height)-10))"
+	@echo "$$(($$(make max-height)-50))"
 
 left-x:
-	@echo 0
+	@echo 20
 
 right-x:
-	@echo "$$(($$(make center-x)*2))"
+	@echo "$$(($$(make center-x)*2 - 20))"
 
 # Get desktop bounds in real pixels via AppleScript
 desktop-bounds:
